@@ -5,8 +5,6 @@ import { promises as fsPromises } from 'fs';
 import * as path from 'path';
 import * as vi from './version-info';
 
-const PACKAGE_NAME: string = 'cmake';
-
 function getURL(
   version: vi.VersionInfo,
   arch_candidates: Array<string>
@@ -86,11 +84,12 @@ async function getArchive(url: string): Promise<string> {
 }
 
 export async function addCMakeToToolCache(
+  package_name: string,
   version: vi.VersionInfo,
   arch_candidates: Array<string>
 ): Promise<string> {
   const extracted_archive = await getArchive(getURL(version, arch_candidates));
-  return await tc.cacheDir(extracted_archive, PACKAGE_NAME, version.name);
+  return await tc.cacheDir(extracted_archive, package_name, version.name);
 }
 
 async function getBinDirectoryFrom(tool_path: string): Promise<string> {
@@ -101,25 +100,17 @@ async function getBinDirectoryFrom(tool_path: string): Promise<string> {
   if (root_dir_path.length != 1) {
     throw new Error('Archive does not have expected layout.');
   }
-  if (process.platform === 'darwin') {
-    // On MacOS the bin directory is hidden behind a few more folders
-    // e.g. <tool_path>/cmake-3.16.2-Darwin-x86_64/CMake.app/Contents/bin/
-    //   or <tool_path>/cmake-2.8.10-Darwin-x86_64/CMake 2.8-10.app/Contents/bin/
-    const base = path.join(tool_path, root_dir_path[0]);
-    const app_dir = await fsPromises.readdir(base);
-    return path.join(base, app_dir[0], 'Contents', 'bin');
-  } else {
-    return path.join(tool_path, root_dir_path[0], 'bin');
-  }
+  return path.join(tool_path, root_dir_path[0]);
 }
 
 export async function addCMakeToPath(
+  package_name: string,
   version: vi.VersionInfo,
   arch_candidates: Array<string>
 ): Promise<void> {
-  let tool_path: string = tc.find(PACKAGE_NAME, version.name);
+  let tool_path: string = tc.find(package_name, version.name);
   if (!tool_path) {
-    tool_path = await addCMakeToToolCache(version, arch_candidates);
+    tool_path = await addCMakeToToolCache(package_name,version, arch_candidates);
   }
   await core.addPath(await getBinDirectoryFrom(tool_path));
 }

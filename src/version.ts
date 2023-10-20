@@ -3,8 +3,6 @@ import * as core from '@actions/core';
 import * as semver from 'semver';
 import * as vi from './version-info';
 
-const VERSION_URL: string =
-  'https://api.github.com/repos/Kitware/CMake/releases';
 const USER_AGENT: string = 'jwlawson-actions-setup-cmake';
 
 interface GithubAsset {
@@ -125,6 +123,7 @@ function getNextFromLink(link: string): string | undefined {
 }
 
 export async function getAllVersionInfo(
+  releases_url: string = '',
   api_token: string = ''
 ): Promise<vi.VersionInfo[]> {
   const client = new rest.RestClient(USER_AGENT);
@@ -133,7 +132,7 @@ export async function getAllVersionInfo(
   // method to use for all other pages.
   const options = getHttpOptions(api_token);
   const version_response = await client.get<GitHubVersion[]>(
-    VERSION_URL,
+    releases_url,
     options
   );
   if (version_response.statusCode != 200 || !version_response.result) {
@@ -167,7 +166,7 @@ export async function getAllVersionInfo(
     while (cur_page <= max_pages) {
       const options = getHttpOptions(api_token, cur_page);
       const version_response = await client.get<GitHubVersion[]>(
-        VERSION_URL,
+        releases_url,
         options
       );
       if (!version_response.result || version_response.result.length == 0) {
