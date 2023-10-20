@@ -1,15 +1,21 @@
-name: 'actions-setup-cmake'
-description: 'Setup the cmake build generator'
+name: 'actions-download-zip'
+description: 'Download a released zip'
 inputs:
-  cmake-version:
-    description: 'The version of cmake to setup. E.g. 3.14.0'
+  version:
+    description: 'The version to download. E.g. 3.14.0'
+    default: ''
+  package-name:
+    description: 'Name of the package (e.g. boost_1_74_0)'
+    default: ''
+  env-var-name:
+    description: 'Name of the export environment (e.g. BOOST_DIR_2019)'
+    default: ''
+  releases-url:
+    description: 'Url of the releases (e.g. https://api.github.com/repos/_org_/_repo_/releases)'
     default: ''
   github-api-token:
     description: 'GitHub token to use when retrieving version info'
     default: '${{ github.token }}'
-  use-32bit:
-    description: 'Force using 32 bit version of cmake, instead of looking for 64 bit version'
-    default: 'false'
 runs:
   using: 'node16'
   main: 'dist/index.js'

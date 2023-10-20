@@ -8,11 +8,13 @@ const USER_AGENT: string = 'jwlawson-actions-setup-cmake';
 interface GithubAsset {
   name: string;
   browser_download_url: string;
+  url: string;
 }
 
 interface GitHubVersion {
   assets: GithubAsset[];
   url: string;
+  browser_download_url: string;
   tag_name: string;
   name: string;
   draft: boolean;
@@ -77,10 +79,11 @@ function convertToVersionInfo(versions: GitHubVersion[]): vi.VersionInfo[] {
     if (sv_version) {
       const assets = v.assets.map((a) => ({
         name: a.name,
-        platform: extractPlatformFrom(a.name),
-        arch: extractArchFrom(a.name),
+        platform: '',
+        arch: '',
         filetype: extractFileTypeFrom(a.name),
-        url: a.browser_download_url,
+        url: a.url,
+        browser_download_url: a.browser_download_url,
       }));
       result.push({
         assets: assets,

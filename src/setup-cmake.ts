@@ -6,28 +6,24 @@ import * as path from 'path';
 import * as vi from './version-info';
 
 function getURL(
+  package_name: string,
   version: vi.VersionInfo,
   arch_candidates: Array<string>
 ): string {
-  const assets_for_platform: vi.AssetInfo[] = version.assets
-    .filter((a) => a.platform === process.platform && a.filetype === 'archive')
-    .sort();
+  core.debug(`All found assets: ${version.assets.map((a) => a.name)}`);
+  const assets_for_platform: vi.AssetInfo[] = version.assets.sort();
   // The arch_candidates provides an ordered set of architectures to try, and
   // the first matching asset is used. This will typically be 'x86_64' first,
   // with 'x86' checked if nothing was found.
   let matching_assets = undefined;
-  for (let arch of arch_candidates) {
-    const arch_assets = assets_for_platform.filter((a) => a.arch === arch);
-    if (arch_assets.length != 0) {
-      matching_assets = arch_assets;
-      break;
-    }
+
+  if (assets_for_platform.length != 0) {
+    matching_assets = assets_for_platform;
   }
+
   if (matching_assets == undefined) {
     // If there are no x86_64 or x86 packages then give up.
-    throw new Error(
-      `Could not find ${process.platform} asset for cmake version ${version.name}`
-    );
+    throw new Error(`Could not find asset for ${package_name}`);
   }
   core.debug(
     `Assets matching platform and arch: ${matching_assets.map((a) => a.name)}`
@@ -48,8 +44,8 @@ function getURL(
     // package uses 10.13. As the oldest (and now deprecated) github runner is
     // on 10.15 we can safely choose to use the standard package.
     // https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
-    const possible_assets = matching_assets.filter(
-      (a) => a.url.match('64') || a.name.match(/macos-universal/)
+    const possible_assets = matching_assets.filter((a) =>
+      a.browser_download_url.match(`${package_name}`)
     );
     if (possible_assets.length > 0) {
       matching_assets = possible_assets;
@@ -64,16 +60,17 @@ function getURL(
   }
   const asset_url: string = matching_assets[0].url;
   const num_found: number = matching_assets.length;
-  core.debug(
-    `Found ${num_found} assets for ${process.platform} with version ${version.name}`
-  );
+  core.debug(`Found ${num_found} assets ${package_name}`);
   core.debug(`Using asset url ${asset_url}`);
   return asset_url;
 }
 
-async function getArchive(url: string): Promise<string> {
-  const download = await tc.downloadTool(url);
-  if (url.endsWith('zip')) {
+async function getArchive(url: string, api_token = ''): Promise<string> {
+  const download = await tc.downloadTool(url, undefined, `token ${api_token}`, {
+    accept: 'application/octet-stream',
+  });
+  if (true) {
+    //url.endsWith('zip')) {
     io.mv(download, download + '.zip');
     return await tc.extractZip(download + '.zip');
   } else if (url.endsWith('tar.gz')) {
@@ -86,9 +83,13 @@ async function getArchive(url: string): Promise<string> {
 export async function addCMakeToToolCache(
   package_name: string,
   version: vi.VersionInfo,
-  arch_candidates: Array<string>
+  arch_candidates: Array<string>,
+  api_token: string
 ): Promise<string> {
-  const extracted_archive = await getArchive(getURL(version, arch_candidates));
+  const extracted_archive = await getArchive(
+    getURL(package_name, version, arch_candidates),
+    api_token
+  );
   return await tc.cacheDir(extracted_archive, package_name, version.name);
 }
 
@@ -106,11 +107,18 @@ async function getBinDirectoryFrom(tool_path: string): Promise<string> {
 export async function addCMakeToPath(
   package_name: string,
   version: vi.VersionInfo,
-  arch_candidates: Array<string>
+  arch_candidates: Array<string>,
+  api_token: string,
+  env_var_name: string,
 ): Promise<void> {
   let tool_path: string = tc.find(package_name, version.name);
   if (!tool_path) {
-    tool_path = await addCMakeToToolCache(package_name,version, arch_candidates);
+    tool_path = await addCMakeToToolCache(
+      package_name,
+      version,
+      arch_candidates,
+      api_token
+    );
   }
-  await core.addPath(await getBinDirectoryFrom(tool_path));
+  await core.exportVariable(env_var_name, await getBinDirectoryFrom(tool_path));
 }

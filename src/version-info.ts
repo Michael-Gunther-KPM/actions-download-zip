@@ -5,6 +5,7 @@ export interface AssetInfo {
   arch: string;
   filetype: string;
   url: string;
+  browser_download_url: string;
 }
 
 export interface VersionInfo {
