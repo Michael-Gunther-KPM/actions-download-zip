@@ -90,7 +90,11 @@ export async function addCMakeToToolCache(
     getURL(package_name, version, arch_candidates),
     api_token
   );
-  return await tc.cacheDir(extracted_archive, package_name, version.name);
+  try{
+    return await tc.cacheDir(extracted_archive, package_name, version.name);
+  }catch{
+    return await tc.cacheFile(extracted_archive, package_name, package_name, version.name);
+  }
 }
 
 async function getBinDirectoryFrom(tool_path: string): Promise<string> {
@@ -109,7 +113,7 @@ export async function addCMakeToPath(
   version: vi.VersionInfo,
   arch_candidates: Array<string>,
   api_token: string,
-  env_var_name: string,
+  env_var_name: string
 ): Promise<void> {
   let tool_path: string = tc.find(package_name, version.name);
   if (!tool_path) {
