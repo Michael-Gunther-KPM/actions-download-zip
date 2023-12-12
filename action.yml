@@ -16,6 +16,9 @@ inputs:
   github-api-token:
     description: 'GitHub token to use when retrieving version info'
     default: '${{ github.token }}'
+  force-reinstall:
+    description: 'Ignore the cached value and reinstall the package'
+    default: 'false'
 runs:
   using: 'node16'
   main: 'dist/index.js'

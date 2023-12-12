@@ -6,6 +6,7 @@ async function run() {
   try {
     core.debug(`Starting run`);
     const requested_version = core.getInput('version');
+    const force_reinstall = core.getBooleanInput('force-reinstall');
     const required_version =
       requested_version === 'latest' ? '' : requested_version;
     const package_name = core.getInput('package-name');
@@ -29,7 +30,8 @@ async function run() {
       chosen_version_info,
       arch_candidates,
       api_token,
-      env_var_name
+      env_var_name,
+      force_reinstall
     );
   } catch (error) {
     core.setFailed((error as Error).message);

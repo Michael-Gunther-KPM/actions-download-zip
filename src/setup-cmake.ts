@@ -90,10 +90,15 @@ export async function addCMakeToToolCache(
     getURL(package_name, version, arch_candidates),
     api_token
   );
-  try{
+  try {
     return await tc.cacheDir(extracted_archive, package_name, version.name);
-  }catch{
-    return await tc.cacheFile(extracted_archive, package_name, package_name, version.name);
+  } catch {
+    return await tc.cacheFile(
+      extracted_archive,
+      package_name,
+      package_name,
+      version.name
+    );
   }
 }
 
@@ -113,10 +118,11 @@ export async function addCMakeToPath(
   version: vi.VersionInfo,
   arch_candidates: Array<string>,
   api_token: string,
-  env_var_name: string
+  env_var_name: string,
+  force_reinstall: boolean
 ): Promise<void> {
   let tool_path: string = tc.find(package_name, version.name);
-  if (!tool_path) {
+  if (!tool_path || force_reinstall) {
     tool_path = await addCMakeToToolCache(
       package_name,
       version,
